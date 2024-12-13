@@ -32,7 +32,20 @@ def test_avg(t: Tensor) -> None:
 @given(tensors(shape=(2, 3, 4)))
 def test_max(t: Tensor) -> None:
     # TODO: Implement for Task 4.4.
-    raise NotImplementedError("Need to implement for Task 4.4")
+    #raise NotImplementedError("Need to implement for Task 4.4")
+    t.requires_grad_(True)
+    max_values = minitorch.max(t, dim=1)
+    max_values.sum().backward()
+
+    for i in range(t.shape[0]):  # Iterate over the batch
+        for j in range(t.shape[2]):  # Iterate over columns
+            max_mask = t[i, :, j] == max_values[i, j]
+            num_max_elements = max_mask.sum()
+            for k in range(t.shape[1]):  # Iterate over the reduced dimension
+                if max_mask[k]:
+                    assert_close(t.grad[i, k, j], 1.0 / num_max_elements)
+                else:
+                    assert t.grad[i, k, j] == 0.0
 
 
 @pytest.mark.task4_4
@@ -54,7 +67,6 @@ def test_max_pool(t: Tensor) -> None:
     assert_close(
         out[0, 0, 0, 0], max([t[0, 0, i, j] for i in range(1) for j in range(2)])
     )
-
 
 @pytest.mark.task4_4
 @given(tensors())
@@ -92,3 +104,4 @@ def test_log_softmax(t: Tensor) -> None:
         assert_close(q[i], q2[i])
 
     minitorch.grad_check(lambda a: minitorch.logsoftmax(a, dim=2), t)
+
